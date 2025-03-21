@@ -1,11 +1,11 @@
 import re
 class AUTO():
     def __init__(self):
-        self.alphabet = 0
-        self.etats = 0
-        self.entrees = 0
-        self.sorties = 0
-        self.transitions = 0
+        self.alphabet = [] #liste qui contient les lettres de l'alphabet
+        self.etats = [] #liste des états de l'automate
+        self.entrees = [] #liste des états entrées
+        self.sorties = [] #liste des états sorties
+        self.transitions = {} #dico { états : { lettres : [états transitoires/arrivées] } }
 
     def display(self):
         # affichage temporaire
@@ -34,8 +34,8 @@ class AUTO():
             match = re.match(r"(\d+)([a-zA-Z]+)(\d+)", ligne)
             depart, symbole, arrivee = int(match.group(1)), match.group(2), int(match.group(3))
             if symbole not in transi[depart]:
-                transi[depart][symbole] = set()
-            transi[depart][symbole].add(arrivee)
+                transi[depart][symbole] = list()
+            transi[depart][symbole].append(arrivee)
         self.alphabet = alphabet
         self.etats = etats
         self.entrees = entrees
@@ -43,11 +43,12 @@ class AUTO():
         self.transitions = transi
 
     def estDeter(self):
-        if len(self.entrees) == 1:
-            for etat in self.transitions.values():
-                for transi in etat.values():
-                    if len(transi) > 1:
-                        return False
+        if len(self.entrees) != 1:
+            return False
+        for etat in self.transitions.values():
+            for transi in etat.values():
+                if len(transi) > 1:
+                    return False
         return True
 
     def estStand(self):
@@ -72,13 +73,15 @@ class AUTO():
             i_sortie = False
             self.etats.append('i')
             self.transitions.update({'i': {}})
-            for i in self.entrees:
-                for symbole, destinations in self.transitions.get(i, {}).items():
-                    if symbole not in self.transitions['i']:
-                        self.transitions['i'][symbole] = set()
-                    self.transitions['i'][symbole].update(destinations)
-                if i in self.sorties:
-                    self.sorties.remove(i)
+            for etat in self.entrees:
+                # récupère les lettres et les états arrivées de l'état[i] dans la liste des entrées
+                for lettre, arrivee in self.transitions.get(etat, {}).items():
+                    if lettre not in self.transitions['i']:
+                        #ajoute la lettre dans les valeurs de l'état[i] + création de la liste des états d'arrivées
+                        self.transitions['i'][lettre] = list(arrivee)
+                if etat in self.sorties:
+                    self.sorties.remove(etat)
+                    #il existe un état entrée sortie donc i est une sortie
                     i_sortie = True
             if i_sortie == True:
                 self.sorties.append('i')
@@ -87,7 +90,7 @@ class AUTO():
             self.display()
 
     def complementaire(self):
-        new_sorties = [i for i in self.etats if i not in self.sorties]
+        new_sorties = [etat for etat in self.etats if etat not in self.sorties]
         self.sorties = new_sorties
         print("Voici l'automate complémentaire")
         self.display()
