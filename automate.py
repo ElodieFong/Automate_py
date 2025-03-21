@@ -1,3 +1,4 @@
+import re
 class AUTO():
     def __init__(self):
         self.alphabet = 0
@@ -30,7 +31,8 @@ class AUTO():
         nb_trans = int(lignes[4])
         transi = {etat: {} for etat in etats}
         for ligne in lignes[5:5 + nb_trans]:
-            depart, symbole, arrivee = int(ligne[0]), ligne[1], int(ligne[2])
+            match = re.match(r"(\d+)([a-zA-Z]+)(\d+)", ligne)
+            depart, symbole, arrivee = int(match.group(1)), match.group(2), int(match.group(3))
             if symbole not in transi[depart]:
                 transi[depart][symbole] = set()
             transi[depart][symbole].add(arrivee)
@@ -45,21 +47,24 @@ class AUTO():
             for etat in self.transitions.values():
                 for transi in etat.values():
                     if len(transi) > 1:
-                        return print("L'automate n'est pas déterministe")
-        return print("L'automate est déterministe")
+                        return False
+        return True
 
     def estStand(self):
         if len(self.entrees) != 1:
-            return print("L'automate n'est standard")
+            return False
         for etat in self.transitions.values():
             for transi in etat.values():
                 for i in transi:
                     if i == 0:
-                        return print("L'automate n'est standard")
-        return print("L'automate est standard")
+                        return False
+        return True
 
     def estComp(self):
         if sum(map(len, self.transitions.values())) == len(self.alphabet)*len(self.etats):
-            print("L'automate est complet")
-        print("L'automate n'est pas complet")
+            return True
+        return False
 
+    def standardisation(self):
+        if self.estStand() == True:
+            print("L'automate est déjà standard")
