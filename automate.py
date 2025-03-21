@@ -79,7 +79,7 @@ class AUTO():
                     self.transitions['i'][symbole].update(destinations)
                 if i in self.sorties:
                     self.sorties.remove(i)
-                i_sortie = True
+                    i_sortie = True
             if i_sortie == True:
                 self.sorties.append('i')
             self.entrees = ['i']
