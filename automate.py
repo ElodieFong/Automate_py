@@ -7,11 +7,14 @@ class AUTO():
         self.transitions = 0
 
     def display(self):
+        # affichage temporaire
         print("l'aphabet de l'automate est: ", self.alphabet)
         print("les états de l'automate sont: ", self.etats)
         print("les entrées de l'automate sont: ", self.entrees)
         print("les sorties de l'automate sont: ", self.sorties)
-        print("la tables des états est: ", self.transitions) #à améliorer l'affichage
+        print("la tables des états est: ")
+        for keys, values in self.transitions.items():
+            print(keys, values)
 
     def insert(self, file):
         with open(file, 'r') as f:
@@ -36,3 +39,27 @@ class AUTO():
         self.entrees = entrees
         self.sorties = sorties
         self.transitions = transi
+
+    def estDeter(self):
+        if len(self.entrees) == 1:
+            for etat in self.transitions.values():
+                for transi in etat.values():
+                    if len(transi) > 1:
+                        return print("L'automate n'est pas déterministe")
+        return print("L'automate est déterministe")
+
+    def estStand(self):
+        if len(self.entrees) != 1:
+            return print("L'automate n'est standard")
+        for etat in self.transitions.values():
+            for transi in etat.values():
+                for i in transi:
+                    if i == 0:
+                        return print("L'automate n'est standard")
+        return print("L'automate est standard")
+
+    def estComp(self):
+        if sum(map(len, self.transitions.values())) == len(self.alphabet)*len(self.etats):
+            print("L'automate est complet")
+        print("L'automate n'est pas complet")
+
