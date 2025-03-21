@@ -13,7 +13,7 @@ class AUTO():
         print("les états de l'automate sont: ", self.etats)
         print("les entrées de l'automate sont: ", self.entrees)
         print("les sorties de l'automate sont: ", self.sorties)
-        print("la tables des états est: ")
+        print("la tables des transitions est: ")
         for keys, values in self.transitions.items():
             print(keys, values)
 
@@ -85,3 +85,9 @@ class AUTO():
             self.entrees = ['i']
             print("Voici l'automate standardisé")
             self.display()
+
+    def complementaire(self):
+        new_sorties = [i for i in self.etats if i not in self.sorties]
+        self.sorties = new_sorties
+        print("Voici l'automate complémentaire")
+        self.display()

@@ -13,3 +13,4 @@ if auto.estStand() == True:
 else:
     print("L'automate n'est pas standard")
     auto.standardisation()
+auto.complementaire()
