@@ -68,3 +68,20 @@ class AUTO():
     def standardisation(self):
         if self.estStand() == True:
             print("L'automate est déjà standard")
+        else:
+            i_sortie = False
+            self.etats.append('i')
+            self.transitions.update({'i': {}})
+            for i in self.entrees:
+                for symbole, destinations in self.transitions.get(i, {}).items():
+                    if symbole not in self.transitions['i']:
+                        self.transitions['i'][symbole] = set()
+                    self.transitions['i'][symbole].update(destinations)
+                if i in self.sorties:
+                    self.sorties.remove(i)
+                i_sortie = True
+            if i_sortie == True:
+                self.sorties.append('i')
+            self.entrees = ['i']
+            print("Voici l'automate standardisé")
+            self.display()
