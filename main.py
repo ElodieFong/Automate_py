@@ -6,7 +6,8 @@ print("Numéro de l'automate: ")
 num = input()
 auto.insert("num_automate/" + str(num) + ".txt")
 auto.display()
-
+auto.completion()
+'''
 auto.estComp()
 auto.estDeter()
 if auto.estStand() == True:
@@ -16,3 +17,4 @@ else:
     auto.standardisation()
 auto.complementaire()
 auto.minimisation()
+'''

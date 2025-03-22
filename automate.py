@@ -91,14 +91,23 @@ class AUTO():
 
     def completion(self): #temp
         if self.estComp() == True:
-            print("L'automate est déjà complet")
+            return print("L'automate est déjà complet")
+        self.etats.append('P')
+        self.transitions['P'] = {symbole: ['P'] for symbole in self.alphabet}
+        for etat in self.etats:
+            for symbole in self.alphabet:
+                if symbole not in self.transitions.get(etat, {}):
+                    self.transitions[etat][symbole] = ['P']
+        print("L'automate a été complété.")
+        self.display()
+
     def determinisation(self): #temp
         if self.estDeter() == True and self.estComp() == True:
             print("L'automate est déjà déterministe et complet")
 
     def minimisation(self): #temp
         if self.estDeter() == False or self.estComp() == False:
-            print("L'automate ne peut pas être minimisé")
+            self.determinisation()
 
     def complementaire(self):
         new_sorties = [etat for etat in self.etats if etat not in self.sorties]
