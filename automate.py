@@ -73,7 +73,7 @@ class AUTO():
         transitions = self.transitions
 
         # Définir la largeur de chaque colonne
-        col_width = 6  # Ajustable selon la lisibilité souhaitée
+        col_width = 10  # Ajustable selon la lisibilité souhaitée
 
         # En-tête avec l'alphabet
         header = " " * (col_width + 1) + "".join(sym.ljust(col_width) for sym in alphabet)
@@ -145,20 +145,18 @@ class AUTO():
 
     def completion(self):
         if self.estComp() == True:
-            return print("L'automate est déjà complet")
+            return
         self.etats.append('P')
         self.transitions['P'] = {symbole: ['P'] for symbole in self.alphabet}
         for etat in self.etats:
             for symbole in self.alphabet:
                 if symbole not in self.transitions.get(etat, {}):
                     self.transitions[etat][symbole] = ['P']
-        print("L'automate a été complété.")
-        self.display()
 
     #ne fonctionne pas du tt : 41, fonctionne mais affiche non deter alors que deter : 31-35
     def determinisation_et_completion_automate(self):
         # États à ignorer
-        etats_a_ignorer = {'P', 'ep'}
+        etats_a_ignorer = {'P', 'z'}
 
         # Convertir les états d'entrée en un tuple trié, en excluant les états à ignorer
         nouveaux_etats = [tuple(sorted(set(self.entrees) - etats_a_ignorer, key=lambda x: str(x)))]
@@ -198,7 +196,6 @@ class AUTO():
         # Complétion
         self.completion()
         print("L'automate a été déterminisé et complété.")
-        self.display()
 
     def afficher_automate_deterministe_complet(self):
         # Afficher l'alphabet
@@ -244,16 +241,16 @@ class AUTO():
                 else:
                     destination_str = str(destination)
                 print(f"{etat_str} --{symbole}--> {destination_str}")
+        self.display()
 
     def afficher_partitions(self, partition, step):
-        # Affiche les partitions successives durant la minimisation
-        print(f"\nPartition {step} :")
-        for class_id, states in sorted(partition.items()):
-            print(f"  Groupe {class_id} : {sorted(states)}")
+        print(f"\nÉtape {step} : Partition des états")
+        for class_id, states in partition.items():
+            print(f"  Groupe {class_id} : {sorted(states, key=lambda x: (isinstance(x, str), x))}")
 
     def minimisation(self):
-        # Minimise un automate déterministe et complet en affichant les partitions successives
-
+        if self.estDeter() == False or self.estComp() == False:
+            self.determinisation_et_completion_automate()
         # Étape 1 : Initialisation des partitions (États finaux vs Non-finaux)
         partition = {}
         if self.sorties:
@@ -270,39 +267,40 @@ class AUTO():
         while not stable:
             stable = True
             new_partition = {}
+            class_map = {}  # Dictionnaire pour suivre l'assignation des groupes
             class_counter = 0
-            class_map = {}
 
             for state in self.etats:
                 # Clé = (groupe d'appartenance, transitions vers groupes pour chaque symbole)
-                key = (
-                    next((groupe for groupe, contenu in partition.items() if state in contenu), -1),
-                    tuple(
-                        next(
-                            (groupe for groupe, contenu in partition.items() if
-                             next(iter(self.transitions[state].get(sym, [-1]))) in contenu),
-                            -1
-                        )
-                        for sym in sorted(self.alphabet)
-                    )
+                groupe_actuel = next((g for g, contenu in partition.items() if state in contenu), -1)
+                transitions_classes = tuple(
+                    next(
+                        (g for g, contenu in partition.items() if
+                         next(iter(self.transitions[state].get(sym, [-1])), -1) in contenu),
+                        -1
+                    ) for sym in sorted(self.alphabet)
                 )
+                key = (groupe_actuel, transitions_classes)
 
-                if key not in class_map:  # Créer les nouveaux groupe si besoin
+                # Création du groupe si la clé est nouvelle
+                if key not in class_map:
                     class_map[key] = class_counter
                     class_counter += 1
-                new_partition.setdefault(class_map[key], set()).add(state)
 
-            if new_partition != partition:  # si la new_particion est differente de l'ancienne ça signifie que l'automate n'est pas encore minimal
+                new_groupe = class_map[key]
+                new_partition.setdefault(new_groupe, set()).add(state)
+
+            if len(new_partition) != len(partition) or any(
+                    new_partition[k] != partition.get(k, set()) for k in new_partition):
                 stable = False
                 self.afficher_partitions(new_partition, step)
                 step += 1
             else:
                 print("\nL’automate est déjà minimal.")
 
-            partition = new_partition.copy()
+            partition = {k: v.copy() for k, v in new_partition.items()}
 
         # Étape 2 : Construction de l'automate minimal
-
         state_map = {state: class_id for class_id, states in partition.items() for state in states}
         min_transitions = {}
 
@@ -313,19 +311,20 @@ class AUTO():
                 dests = self.transitions[rep].get(sym, [])
                 if dests:
                     target = next(iter(dests))
+
+                    if target not in state_map:
+                        state_map[target] = target
+
                     min_transitions[class_id][sym] = state_map[target]
 
-        AFDCM = {
-            "alphabet": self.alphabet,
-            "states": set(partition.keys()),
-            # "initial_states": {state_map[next(iter(automate["initial_states"]))]},
-            "initial_states": [class_id for class_id, group in partition.items()
-                               if next(iter(self.entrees)) in group],
-            "final_states": [cid for cid, states in partition.items() if states & self.sorties],
-            "transitions": min_transitions
-        }
-        
-        return AFDCM
+        # Mise à jour de l'automate
+        self.etats = set(partition.keys())
+        self.transitions = min_transitions
+        self.entrees = [state_map[next(iter(self.entrees))]]
+        self.sorties = [cid for cid, states in partition.items() if states & set(self.sorties)]
+
+        print("\nAutomate minimal obtenu :")
+        self.afficher_automate_minimal()
 
     def afficher_automate_minimal(self):
         # Affiche l'automate minimisé sous un format lisible
