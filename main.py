@@ -25,3 +25,5 @@ else:
         print("\nL'automate est déjà déterministe et complet.")
 print("\n== Automate déterminisé et complet ==")
 auto.afficher_automate_deterministe_complet()
+auto.minimisation()
+auto.afficher_automate_minimal()

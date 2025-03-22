@@ -245,34 +245,139 @@ class AUTO():
                     destination_str = str(destination)
                 print(f"{etat_str} --{symbole}--> {destination_str}")
 
-    def minimisation(self): #temp
-        if self.estDeter() == False or self.estComp() == False:
-            self.determinisation()
+    def afficher_partitions(self, partition, step):
+        # Affiche les partitions successives durant la minimisation
+        print(f"\nPartition {step} :")
+        for class_id, states in sorted(partition.items()):
+            print(f"  Groupe {class_id} : {sorted(states)}")
 
-    def reconnaitre_mot(mot, automate):
+    def minimisation(self):
+        # Minimise un automate déterministe et complet en affichant les partitions successives
+
+        # Étape 1 : Initialisation des partitions (États finaux vs Non-finaux)
+        partition = {}
+        if self.sorties:
+            partition[0] = set(self.sorties)
+            partition[1] = set(self.etats) - partition[0]
+        else:
+            partition[0] = set(self.etats)  # Aucun état final
+
+        self.afficher_partitions(partition, step=0)
+
+        stable = False
+        step = 1
+
+        while not stable:
+            stable = True
+            new_partition = {}
+            class_counter = 0
+            class_map = {}
+
+            for state in self.etats:
+                # Clé = (groupe d'appartenance, transitions vers groupes pour chaque symbole)
+                key = (
+                    next((groupe for groupe, contenu in partition.items() if state in contenu), -1),
+                    tuple(
+                        next(
+                            (groupe for groupe, contenu in partition.items() if
+                             next(iter(self.transitions[state].get(sym, [-1]))) in contenu),
+                            -1
+                        )
+                        for sym in sorted(self.alphabet)
+                    )
+                )
+
+                if key not in class_map:  # Créer les nouveaux groupe si besoin
+                    class_map[key] = class_counter
+                    class_counter += 1
+                new_partition.setdefault(class_map[key], set()).add(state)
+
+            if new_partition != partition:  # si la new_particion est differente de l'ancienne ça signifie que l'automate n'est pas encore minimal
+                stable = False
+                self.afficher_partitions(new_partition, step)
+                step += 1
+            else:
+                print("\nL’automate est déjà minimal.")
+
+            partition = new_partition.copy()
+
+        # Étape 2 : Construction de l'automate minimal
+
+        state_map = {state: class_id for class_id, states in partition.items() for state in states}
+        min_transitions = {}
+
+        for class_id, states_in_group in partition.items():
+            rep = next(iter(states_in_group))
+            min_transitions[class_id] = {}
+            for sym in sorted(self.alphabet):
+                dests = self.transitions[rep].get(sym, [])
+                if dests:
+                    target = next(iter(dests))
+                    min_transitions[class_id][sym] = state_map[target]
+
+        AFDCM = {
+            "alphabet": self.alphabet,
+            "states": set(partition.keys()),
+            # "initial_states": {state_map[next(iter(automate["initial_states"]))]},
+            "initial_states": [class_id for class_id, group in partition.items()
+                               if next(iter(self.entrees)) in group],
+            "final_states": [cid for cid, states in partition.items() if states & self.sorties],
+            "transitions": min_transitions
+        }
+        
+        return AFDCM
+
+    def afficher_automate_minimal(self):
+        # Affiche l'automate minimisé sous un format lisible
+
+        alphabet = sorted(self.alphabet)
+        states = sorted(self.etats)
+        init_states = self.entrees
+        final_states = self.sorties
+        transitions = self.transitions
+
+        col_width = 6  # Largeur uniforme pour un bon alignement
+        header = " " * (col_width + 1) + "".join(sym.ljust(col_width) for sym in alphabet)
+        print(header)
+        print("=" * len(header))  # séparation
+
+        for state in states:
+            prefix = ""
+            prefix += "E" if state in init_states else " "
+            prefix += "S" if state in final_states else " "
+            prefix += f"{state}".ljust(col_width - 2)  # Alignement
+
+            ligne = []
+            for sym in alphabet:
+                dest = transitions[state].get(sym, "--")
+                ligne.append(f"{str(dest).ljust(col_width)}")
+
+            print(prefix + " ".join(ligne))
+
+    def reconnaitre_mot(self, mot):
         # verifier si un mot est reconnu par l'automate (true si oui, false sinon)
-        current_state = next(iter(automate["initial_states"]))  # Un seul état initial
+        current_state = next(iter(self.entrees))  # Un seul état initial
 
         for char in mot:
-            if char not in automate["alphabet"]:
+            if char not in self.alphabet:
                 print(f"Symbole '{char}' absent de l'alphabet")
                 return False
             # current_state = automate["transitions"][current_state][char]  # <- plus besoin de next/iter
-            dests = automate["transitions"].get(current_state, {}).get(char, [])
+            dests = self.transitions.get(current_state, {}).get(char, [])
             if not dests:
                 return False
             current_state = next(iter(dests))
 
-        return current_state in automate["final_states"]
+        return current_state in self.sorties
 
-    def lire_mot(automate):
+    def lire_mot(self):
         print("\nEntrer des mots à tester, taper 'fin' pour quitter :")
         while True:
             mot = input("→ Mot : ").strip()
             if mot.lower() == "fin":
                 print("Fin de la lecture des mots.")
                 break
-            if reconnaitre_mot(mot, automate):
+            if self.reconnaitre_mot(mot):
                 print("Mot recconnu")
             else:
                 print("inconnu au bataillon! Je rigole. Mot Non-recconnu")
