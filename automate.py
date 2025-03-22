@@ -77,8 +77,8 @@ class AUTO():
                 # récupère les lettres et les états arrivées de l'état[i] dans la liste des entrées
                 for lettre, arrivee in self.transitions.get(etat, {}).items():
                     if lettre not in self.transitions['i']:
-                        #ajoute la lettre dans les valeurs de l'état[i] + création de la liste des états d'arrivées
-                        self.transitions['i'][lettre] = list(arrivee)
+                        #ajoute les valeurs de l'état[i]: lettres et états d'arrivées
+                        self.transitions['i'][lettre] = arrivee
                 if etat in self.sorties:
                     self.sorties.remove(etat)
                     #il existe un état entrée sortie donc i est une sortie
@@ -88,6 +88,17 @@ class AUTO():
             self.entrees = ['i']
             print("Voici l'automate standardisé")
             self.display()
+
+    def completion(self): #temp
+        if self.estComp() == True:
+            print("L'automate est déjà complet")
+    def determinisation(self): #temp
+        if self.estDeter() == True and self.estComp() == True:
+            print("L'automate est déjà déterministe et complet")
+
+    def minimisation(self): #temp
+        if self.estDeter() == False or self.estComp() == False:
+            print("L'automate ne peut pas être minimisé")
 
     def complementaire(self):
         new_sorties = [etat for etat in self.etats if etat not in self.sorties]
