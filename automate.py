@@ -155,13 +155,127 @@ class AUTO():
         print("L'automate a été complété.")
         self.display()
 
-    def determinisation(self): #temp
-        if self.estDeter() == True and self.estComp() == True:
-            print("L'automate est déjà déterministe et complet")
+    #ne fonctionne pas du tt : 41, fonctionne mais affiche non deter alors que deter : 31-35
+    def determinisation_et_completion_automate(self):
+        # États à ignorer
+        etats_a_ignorer = {'P', 'ep'}
+
+        # Convertir les états d'entrée en un tuple trié, en excluant les états à ignorer
+        nouveaux_etats = [tuple(sorted(set(self.entrees) - etats_a_ignorer, key=lambda x: str(x)))]
+        nouvelles_transitions = {}
+        etats_a_traiter = [tuple(sorted(set(self.entrees) - etats_a_ignorer, key=lambda x: str(x)))]
+
+        while etats_a_traiter:
+            etat_courant = etats_a_traiter.pop()
+            nouvelles_transitions[etat_courant] = {}
+
+            for symbole in self.alphabet:
+                # Collecter tous les états suivants pour chaque état courant et chaque symbole, en excluant les états à ignorer
+                etats_suivants = set()
+                for etat in etat_courant:
+                    if etat not in etats_a_ignorer:  # Ignorer les états spéciaux
+                        etats_suivants.update(self.transitions.get(etat, {}).get(symbole, set()))
+
+                # Exclure les états à ignorer des états suivants
+                etats_suivants -= etats_a_ignorer
+
+                # Convertir l'ensemble en tuple trié avec une clé de tri personnalisée
+                etats_suivants_tuple = tuple(sorted(etats_suivants, key=lambda x: str(x)))
+
+                # Ajouter la transition
+                nouvelles_transitions[etat_courant][symbole] = etats_suivants_tuple
+
+                if etats_suivants_tuple not in nouveaux_etats:
+                    nouveaux_etats.append(etats_suivants_tuple)
+                    etats_a_traiter.append(etats_suivants_tuple)
+
+        # Mettre à jour les propriétés de l'automate
+        self.etats = nouveaux_etats
+        self.transitions = nouvelles_transitions
+        self.entrees = [tuple(sorted(set(self.entrees) - etats_a_ignorer, key=lambda x: str(x)))]
+        self.sorties = [etat for etat in self.etats if any(s in etat for s in self.sorties)]
+
+        # Complétion
+        self.completion()
+        print("L'automate a été déterminisé et complété.")
+        self.display()
+
+    def afficher_automate_deterministe_complet(self):
+        # Afficher l'alphabet
+        print(f"Alphabet : {self.alphabet}")
+
+        # Afficher les états avec leur composition
+        print("\nÉtats de l automate et leur composition en états de l'automate d'origine :")
+        for etat in self.etats:
+            if isinstance(etat, tuple):
+                composition = ".".join(str(e) for e in etat)  # Convertir en chaîne avec séparateur
+            else:
+                composition = str(etat)
+            print(f"- {composition} : correspond à {etat}")
+
+        # Afficher les états initiaux
+        print("\nÉtats initiaux :")
+        for etat in self.entrees:
+            if isinstance(etat, tuple):
+                composition = ".".join(str(e) for e in etat)
+            else:
+                composition = str(etat)
+            print(f"- {composition}")
+
+        # Afficher les états finaux
+        print("\nÉtats finaux :")
+        for etat in self.sorties:
+            if isinstance(etat, tuple):
+                composition = ".".join(str(e) for e in etat)
+            else:
+                composition = str(etat)
+            print(f"- {composition}")
+
+        # Afficher les transitions
+        print("\nTransitions :")
+        for etat, transitions in self.transitions.items():
+            if isinstance(etat, tuple):
+                etat_str = ".".join(str(e) for e in etat)
+            else:
+                etat_str = str(etat)
+            for symbole, destination in transitions.items():
+                if isinstance(destination, tuple):
+                    destination_str = ".".join(str(e) for e in destination)
+                else:
+                    destination_str = str(destination)
+                print(f"{etat_str} --{symbole}--> {destination_str}")
 
     def minimisation(self): #temp
         if self.estDeter() == False or self.estComp() == False:
             self.determinisation()
+
+    def reconnaitre_mot(mot, automate):
+        # verifier si un mot est reconnu par l'automate (true si oui, false sinon)
+        current_state = next(iter(automate["initial_states"]))  # Un seul état initial
+
+        for char in mot:
+            if char not in automate["alphabet"]:
+                print(f"Symbole '{char}' absent de l'alphabet")
+                return False
+            # current_state = automate["transitions"][current_state][char]  # <- plus besoin de next/iter
+            dests = automate["transitions"].get(current_state, {}).get(char, [])
+            if not dests:
+                return False
+            current_state = next(iter(dests))
+
+        return current_state in automate["final_states"]
+
+    def lire_mot(automate):
+        print("\nEntrer des mots à tester, taper 'fin' pour quitter :")
+        while True:
+            mot = input("→ Mot : ").strip()
+            if mot.lower() == "fin":
+                print("Fin de la lecture des mots.")
+                break
+            if reconnaitre_mot(mot, automate):
+                print("Mot recconnu")
+            else:
+                print("inconnu au bataillon! Je rigole. Mot Non-recconnu")
 
     def complementaire(self):
         new_sorties = [etat for etat in self.etats if etat not in self.sorties]
