@@ -7,64 +7,6 @@ class AUTO():
         self.sorties = [] #liste des états sorties
         self.transitions = {} #dico { états : { lettres : [états transitoires/arrivées] } }
 
-    def insert(self, myfile):
-        with open(myfile, 'r') as f:
-            lignes = [ligne.strip() for ligne in f if ligne.strip()]
-
-        nb_symb = int(lignes[0])
-        alphabet = {chr(ord('a') + i) for i in range(nb_symb)}
-
-        # Mapping pour transformer noms d'états (ex: 'P') en entiers
-        etat_map = {}
-        etat_counter = 0
-        def get_etat_id(name):
-            nonlocal etat_counter
-            if name not in etat_map:
-                if name == 'P':
-                    etat_map[name] = 'P'
-                else:
-                    etat_map[name] = etat_counter
-                    etat_counter += 1
-            return etat_map[name]
-        # États initiaux
-        ent_info = lignes[2].split()
-        entrees = {get_etat_id(s) for s in ent_info[1:]}
-        # États finaux
-        sor_info = lignes[3].split()
-        sorties = {get_etat_id(s) for s in sor_info[1:]}
-
-        nb_trans = int(lignes[4])
-        transi = {}
-        etats = set()
-
-        for i in range(5, 5 + nb_trans):
-            ligne = lignes[i].strip()
-            match = re.match(r"([a-zA-Z0-9]+)([a-zA-Z]+)([a-zA-Z0-9]+)", ligne)
-            if not match:
-                raise ValueError(f"Ligne mal formatée : '{ligne}'")
-
-            depart, symb, arrivee = match.group(1), match.group(2), match.group(3)
-            initial = get_etat_id(depart)
-            final = get_etat_id(arrivee)
-            etats.update([initial, final])
-
-            if initial not in transi:
-                transi[initial] = {}
-            if symb not in transi[initial]:
-                transi[initial][symb] = []
-            if final not in transi[initial][symb]:
-                transi[initial][symb].append(final)
-
-        for etat in etats:
-            if etat not in transi:
-                transi[etat] = {}
-
-        self.alphabet = alphabet
-        self.etats = etats
-        self.entrees = entrees
-        self.sorties = sorties
-        self.transitions = transi
-
     def insert(self, file):
         with open(file, 'r') as f:
             lignes = [ligne.strip() for ligne in f if ligne.strip()]
@@ -201,7 +143,7 @@ class AUTO():
             print("Voici l'automate standardisé")
             self.display()
 
-    def completion(self): #temp
+    def completion(self):
         if self.estComp() == True:
             return print("L'automate est déjà complet")
         self.etats.append('P')
