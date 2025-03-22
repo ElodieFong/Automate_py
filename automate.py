@@ -73,7 +73,7 @@ class AUTO():
         transitions = self.transitions
 
         # Définir la largeur de chaque colonne
-        col_width = 10  # Ajustable selon la lisibilité souhaitée
+        col_width = 20  # Ajustable selon la lisibilité souhaitée
 
         # En-tête avec l'alphabet
         header = " " * (col_width + 1) + "".join(sym.ljust(col_width) for sym in alphabet)
@@ -154,17 +154,22 @@ class AUTO():
                     self.transitions[etat][symbole] = ['P']
 
     #ne fonctionne pas du tt : 41, fonctionne mais affiche non deter alors que deter : 31-35
-    def determinisation_et_completion_automate(self):
-        # États à ignorer
-        etats_a_ignorer = {'P', 'z'}
+    def determinisation_completion(self):
+        etats_a_ignorer = {'z'}
 
         # Convertir les états d'entrée en un tuple trié, en excluant les états à ignorer
         nouveaux_etats = [tuple(sorted(set(self.entrees) - etats_a_ignorer, key=lambda x: str(x)))]
         nouvelles_transitions = {}
-        etats_a_traiter = [tuple(sorted(set(self.entrees) - etats_a_ignorer, key=lambda x: str(x)))]
+        etats_a_traiter = [tuple(
+            sorted(set(self.entrees) - etats_a_ignorer, key=lambda x: str(x)))]  # Initialiser avec les états d'entrée
 
         while etats_a_traiter:
             etat_courant = etats_a_traiter.pop()
+
+            # Si l'état courant est vide, on l'ignore et on passe à l'itération suivante
+            if not etat_courant:
+                continue
+
             nouvelles_transitions[etat_courant] = {}
 
             for symbole in self.alphabet:
@@ -180,12 +185,16 @@ class AUTO():
                 # Convertir l'ensemble en tuple trié avec une clé de tri personnalisée
                 etats_suivants_tuple = tuple(sorted(etats_suivants, key=lambda x: str(x)))
 
-                # Ajouter la transition
-                nouvelles_transitions[etat_courant][symbole] = etats_suivants_tuple
+                # Si l'état suivant est vide (i.e. un ensemble vide), on ne l'ajoute pas
+                if etats_suivants_tuple:
+                    nouvelles_transitions[etat_courant][symbole] = etats_suivants_tuple
 
-                if etats_suivants_tuple not in nouveaux_etats:
-                    nouveaux_etats.append(etats_suivants_tuple)
-                    etats_a_traiter.append(etats_suivants_tuple)
+                    if etats_suivants_tuple not in nouveaux_etats:
+                        nouveaux_etats.append(etats_suivants_tuple)
+                        etats_a_traiter.append(etats_suivants_tuple)
+
+        # Filtrer les états vides
+        nouveaux_etats = [etat for etat in nouveaux_etats if etat]  # Supprimer les états vides
 
         # Mettre à jour les propriétés de l'automate
         self.etats = nouveaux_etats
@@ -197,7 +206,7 @@ class AUTO():
         self.completion()
         print("L'automate a été déterminisé et complété.")
 
-    def afficher_automate_deterministe_complet(self):
+    def afficher_deterministe_complet(self):
         # Afficher l'alphabet
         print(f"Alphabet : {self.alphabet}")
 
@@ -250,7 +259,7 @@ class AUTO():
 
     def minimisation(self):
         if self.estDeter() == False or self.estComp() == False:
-            self.determinisation_et_completion_automate()
+            self.determinisation_completion()
         # Étape 1 : Initialisation des partitions (États finaux vs Non-finaux)
         partition = {}
         if self.sorties:
