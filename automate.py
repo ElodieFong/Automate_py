@@ -115,10 +115,17 @@ class AUTO():
         if 'P' in self.etats:
             self.etats.remove('P')
             P = True
+        i = False
+        if 'i' in self.etats:
+            self.etats.remove('i')
+            i = True
         etats = sorted(self.etats)
         if P == True:
             self.etats.append('P')
             etats.append('P')
+        if i == True:
+            self.etats.append('i')
+            etats.append('i')
         ent_etats = self.entrees
         sor_etats = self.sorties
         transitions = self.transitions
