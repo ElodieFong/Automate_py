@@ -153,7 +153,6 @@ class AUTO():
                 if symbole not in self.transitions.get(etat, {}):
                     self.transitions[etat][symbole] = ['P']
 
-    #ne fonctionne pas du tt : 41, fonctionne mais affiche non deter alors que deter : 31-35
     def determinisation_completion(self):
         etats_a_ignorer = {'z'}
 
@@ -207,10 +206,8 @@ class AUTO():
         print("L'automate a été déterminisé et complété.")
 
     def afficher_deterministe_complet(self):
-        # Afficher l'alphabet
         print(f"Alphabet : {self.alphabet}")
 
-        # Afficher les états avec leur composition
         print("\nÉtats de l automate et leur composition en états de l'automate d'origine :")
         for etat in self.etats:
             if isinstance(etat, tuple):
@@ -219,7 +216,6 @@ class AUTO():
                 composition = str(etat)
             print(f"- {composition} : correspond à {etat}")
 
-        # Afficher les états initiaux
         print("\nÉtats initiaux :")
         for etat in self.entrees:
             if isinstance(etat, tuple):
@@ -228,7 +224,6 @@ class AUTO():
                 composition = str(etat)
             print(f"- {composition}")
 
-        # Afficher les états finaux
         print("\nÉtats finaux :")
         for etat in self.sorties:
             if isinstance(etat, tuple):
@@ -237,7 +232,6 @@ class AUTO():
                 composition = str(etat)
             print(f"- {composition}")
 
-        # Afficher les transitions
         print("\nTransitions :")
         for etat, transitions in self.transitions.items():
             if isinstance(etat, tuple):
@@ -255,7 +249,7 @@ class AUTO():
     def afficher_partitions(self, partition, step):
         print(f"\nÉtape {step} : Partition des états")
         for class_id, states in partition.items():
-            print(f"  Groupe {class_id} : {sorted(states, key=lambda x: (isinstance(x, str), x))}")
+            print(f"  Groupe {class_id} : {sorted(states, key=lambda x: str(x))}")
 
     def minimisation(self):
         if self.estDeter() == False or self.estComp() == False:
@@ -305,7 +299,7 @@ class AUTO():
                 self.afficher_partitions(new_partition, step)
                 step += 1
             else:
-                print("\nL’automate est déjà minimal.")
+                print("\nL’automate est minimal.")
 
             partition = {k: v.copy() for k, v in new_partition.items()}
 
@@ -363,18 +357,18 @@ class AUTO():
             print(prefix + " ".join(ligne))
 
     def reconnaitre_mot(self, mot):
-        # verifier si un mot est reconnu par l'automate (true si oui, false sinon)
-        current_state = next(iter(self.entrees))  # Un seul état initial
+        current_state = next(iter(self.entrees))  # On part du seul état initial
 
         for char in mot:
             if char not in self.alphabet:
                 print(f"Symbole '{char}' absent de l'alphabet")
                 return False
-            # current_state = automate["transitions"][current_state][char]  # <- plus besoin de next/iter
-            dests = self.transitions.get(current_state, {}).get(char, [])
-            if not dests:
+            dests = self.transitions.get(current_state, {}).get(char, None)
+            if dests is None:
                 return False
-            current_state = next(iter(dests))
+            # Si c'est une liste, on prend le 1er élément, sinon on suppose que c'est un int
+            current_state = dests[0] if isinstance(dests, list) else dests
+        # Automate déterministe → un seul état d'arrivée
 
         return current_state in self.sorties
 
@@ -395,3 +389,12 @@ class AUTO():
         self.sorties = new_sorties
         print("Voici l'automate complémentaire")
         self.display()
+
+    def auto_copy(self):
+        copy_auto = AUTO()
+        copy_auto.alphabet = self.alphabet
+        copy_auto.etats = self.etats
+        copy_auto.entrees = self.entrees
+        copy_auto.sorties = self.sorties
+        copy_auto.transitions = self.transitions
+        return copy_auto
